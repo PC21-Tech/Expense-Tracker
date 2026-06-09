@@ -1,0 +1,137 @@
+<section class="module" id="module-4" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h1 class="module-title">首页如何刷新列表</h1>
+      <p class="module-subtitle">把 <code>getData</code> 想成<strong>重新拍照</strong>：数据库里的摆设变了，你就再按一次快门，<span class="term" data-definition="React state（状态）是组件「记住」的数据；setState 会触发界面重画。">state</span> 里的快照更新，列表就换新的。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">插入后为什么要立刻 getData？</h2>
+        <p><span class="term" data-definition="事务（transaction）把多条 SQL 包成「要么全成功要么全失败」的一捆，避免写到一半崩溃留下脏数据。">withTransactionAsync</span> 保证 INSERT 和随后的读取在同一捆里完成。</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">  <span class="code-keyword">async</span> <span class="code-keyword">function</span> <span class="code-function">insertTransaction</span>(transaction: Transaction) {</span>
+<span class="code-line">    db.<span class="code-function">withTransactionAsync</span>(<span class="code-keyword">async</span> () => {</span>
+<span class="code-line">      <span class="code-keyword">await</span> db.<span class="code-function">runAsync</span>(</span>
+<span class="code-line">        `</span>
+<span class="code-line">        INSERT INTO Transactions (category_id, amount, date, description, type) VALUES (?, ?, ?, ?, ?);</span>
+<span class="code-line">      `,</span>
+<span class="code-line">        [</span>
+<span class="code-line">          transaction.category_id,</span>
+<span class="code-line">          transaction.amount,</span>
+<span class="code-line">          transaction.date,</span>
+<span class="code-line">          transaction.description,</span>
+<span class="code-line">          transaction.type,</span>
+<span class="code-line">        ]</span>
+<span class="code-line">      );</span>
+<span class="code-line">      <span class="code-keyword">await</span> <span class="code-function">getData</span>();</span>
+<span class="code-line">    });</span>
+<span class="code-line">  }</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">定义异步函数：接收一笔完整的 Transaction 对象。</p>
+              <p class="tl">向 SQLite 要一个事务块，里面的步骤要么一起提交要么一起回滚。</p>
+              <p class="tl">执行一条写操作 runAsync。</p>
+              <p class="tl">多行字符串开始：里面是标准 INSERT 模板。</p>
+              <p class="tl">列名与占位符一一对应，顺序和下面数组一致。</p>
+              <p class="tl">模板字符串结束，逗号后是参数数组。</p>
+              <p class="tl">数组开始：按问号顺序塞值。</p>
+              <p class="tl">分类外键。</p>
+              <p class="tl">金额。</p>
+              <p class="tl">日期时间戳（秒）。</p>
+              <p class="tl">备注文本。</p>
+              <p class="tl">收入或支出枚举。</p>
+              <p class="tl">数组结束。</p>
+              <p class="tl">runAsync 调用结束。</p>
+              <p class="tl">写完后立刻再查一遍，刷新 transactions 等 state。</p>
+              <p class="tl">事务回调结束。</p>
+              <p class="tl">insertTransaction 函数体结束。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">删除一笔时呢？</h2>
+        <div class="icon-rows">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-1)">👆</div>
+            <div>
+              <strong>长按</strong>
+              <p>TransactionsList 用 onLongPress 调 deleteTransaction(id)。</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-2)">🗑️</div>
+            <div>
+              <strong>DELETE</strong>
+              <p>Home 里 runAsync 执行 DELETE FROM … WHERE id = ?，再 getData()。</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong class="callout-title">调试提示</strong>
+            <p>若列表不更新，先确认 INSERT/DELETE 后有没有 await getData()，再看控制台里 runAsync 是否抛错。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">本模块自测</h2>
+        <div class="quiz-container" id="quiz-m4">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="对。insertTransaction 末尾 await getData()；否则 state 仍是旧快照。"
+               data-explanation-wrong="想想 React：不 setState，界面会自己变吗？">
+            <h3 class="quiz-question">用户保存新交易后，首页列表立刻出现新行，主要依赖什么？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>SQLite 会自动通知所有 Text 组件重绘</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>insertTransaction 在写入后调用 getData() 更新 state</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只要 AddTransaction 里 setAmount 成空字符串就够</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="对。清空用 DELETE FROM Transactions 无 WHERE，再 getData；这是危险操作，生产里要加确认。"
+               data-explanation-wrong="看 Home.tsx 里 deleteAllTransactions 的实现。">
+            <h3 class="quiz-question">「清空全部交易」按钮会让数据库发生什么？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>删除 Transactions 表里所有行，然后刷新数据</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只隐藏界面，数据库原封不动</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只删 Categories，不碰 Transactions</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m4')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m4')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

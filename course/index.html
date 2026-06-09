@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>记账助手 · 代码背后发生了什么</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    :root {
+      --color-accent:       #2A7B9B;
+      --color-accent-hover: #1F6280;
+      --color-accent-light: #E4F2F7;
+      --color-accent-muted: #5A9DB8;
+    }
+  </style>
+
+  <script src="main.js" defer></script>
+</head>
+<body>
+
+  <nav class="nav" id="nav">
+    <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="nav-inner">
+      <span class="nav-title">记账助手 · 代码背后发生了什么</span>
+      <div class="nav-dots" id="nav-dots" role="tablist">
+        <button class="nav-dot" data-target="module-1" data-tooltip="从「记一笔」说起" role="tab" aria-label="模块 1: 从「记一笔」说起"></button>
+        <button class="nav-dot" data-target="module-2" data-tooltip="谁在做这件事" role="tab" aria-label="模块 2: 谁在做这件事"></button>
+        <button class="nav-dot" data-target="module-3" data-tooltip="SQLite 与数据形状" role="tab" aria-label="模块 3: SQLite 与数据形状"></button>
+        <button class="nav-dot" data-target="module-4" data-tooltip="首页如何刷新列表" role="tab" aria-label="模块 4: 首页如何刷新列表"></button>
+        <button class="nav-dot" data-target="module-5" data-tooltip="图表与周视图" role="tab" aria-label="模块 5: 图表与周视图"></button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <!-- modules/*.html content is assembled here by build.sh -->
+<section class="module" id="module-1" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">从「记一笔」说起</h1>
+      <p class="module-subtitle">你点保存之后，钱和文字去了哪里？把它想成快递：表单是打包台，函数是快递员，<span class="term" data-definition="SQLite 是一种轻量级关系型数据库，整个库常常就是一个文件，适合装在手机 App 里离线使用。">SQLite</span> 是小区里的智能快递柜。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">这个 App 在做什么？</h2>
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1)">✏️</div>
+            <h4 class="pattern-title">记收支</h4>
+            <p class="pattern-desc">选支出或收入、分类、金额和备注，保存在本机。</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2)">📊</div>
+            <h4 class="pattern-title">看图表</h4>
+            <p class="pattern-desc">按周汇总柱状图，切换收入/支出。</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5)">
+            <div class="pattern-icon" style="background: var(--color-actor-5)">🔒</div>
+            <h4 class="pattern-title">本地优先</h4>
+            <p class="pattern-desc">数据在 <span class="term" data-definition="Expo 是一套用 JavaScript/TypeScript 写原生移动应用和 Web 的工具链，本项目用它跑 React Native。">Expo</span> 自带的 SQLite 文件里，默认不上传云端。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">跟一趟：从手指到数据库</h2>
+        <p>下面每一步点「Next Step」，看「包裹」在谁之间传递。对应真实代码里的 <code>handleSave</code> → <code>insertTransaction</code> → <span class="term" data-definition="SQL 是用来读写关系型数据库的语言，这里用 INSERT 写入一行交易记录。">SQL</span> <code>INSERT</code>。</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"flow-actor-1","label":"你在 AddTransaction 里填好金额、备注、分类，点「保存」"},
+          {"highlight":"flow-actor-2","label":"AddTransaction 组装对象并 await 父组件传来的 insertTransaction"},
+          {"highlight":"flow-actor-3","label":"Home 里用 db.runAsync 执行 INSERT 与占位符参数","packet":true,"from":"actor-2","to":"actor-3"},
+          {"highlight":"flow-actor-4","label":"SQLite 把一行写进 mySQLiteDB.db 文件","packet":true,"from":"actor-3","to":"actor-4"},
+          {"highlight":"flow-actor-3","label":"同一事务里再调用 getData()，重新 SELECT，列表与汇总更新","packet":true,"from":"actor-4","to":"actor-3"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1">
+              <div class="flow-actor-icon">👆</div>
+              <span>你</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-2">
+              <div class="flow-actor-icon">➕</div>
+              <span>AddTransaction</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-3">
+              <div class="flow-actor-icon">🏠</div>
+              <span>Home</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-4">
+              <div class="flow-actor-icon">🗄️</div>
+              <span>SQLite</span>
+            </div>
+          </div>
+          <div class="flow-packet" id="flow-packet"></div>
+          <div class="flow-step-label" id="flow-label">Click &quot;Next Step&quot; to begin</div>
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">Next Step</button>
+            <button class="btn flow-reset-btn">Restart</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">代码 ↔ 白话：<code>handleSave</code> 在打包什么？</h2>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">    <span class="code-comment">// @ts-ignore</span></span>
+<span class="code-line">    <span class="code-keyword">await</span> <span class="code-function">insertTransaction</span>({</span>
+<span class="code-line">      <span class="code-property">amount</span>: <span class="code-function">Number</span>(amount),</span>
+<span class="code-line">      description,</span>
+<span class="code-line">      category_id: categoryId,</span>
+<span class="code-line">      date: <span class="code-keyword">new</span> <span class="code-function">Date</span>().getTime() / <span class="code-number">1000</span>,</span>
+<span class="code-line">      type: category <span class="code-keyword">as</span> <span class="code-string">&quot;Expense&quot;</span> | <span class="code-string">&quot;Income&quot;</span>,</span>
+<span class="code-line">    });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">告诉 TypeScript 检查器「这一行先别较真」，原型里类型偶尔会对不齐。</p>
+              <p class="tl">调用父组件传入的 insertTransaction，把下面这个对象交给 Home 去写库。</p>
+              <p class="tl">把金额输入框里的字符串转成数字。</p>
+              <p class="tl">备注原样传上去；category_id 用当前选中的分类主键。</p>
+              <p class="tl">当前时刻转成 Unix 时间戳的「秒」版本（毫秒除以 1000）。</p>
+              <p class="tl">标记这是支出还是收入，类型写成字面量联合，减少拼写错误。</p>
+              <p class="tl">对象结束，这一整条 await 语句写完。</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong class="callout-title">小洞察</strong>
+            <p>子组件不直接碰数据库，只调用父组件传来的函数。这样改存储方式时，通常只动 Home 一层——这叫「把变化关在一扇门后」。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">本模块自测</h2>
+        <div class="quiz-container" id="quiz-m1">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="对。insertTransaction 在 Home 里用 useSQLiteContext 拿到的 db 执行写入；AddTransaction 只负责表单状态。"
+               data-explanation-wrong="再想想：谁拿着 useSQLiteContext()？谁把 insertTransaction 当 props 传下去？">
+            <h3 class="quiz-question">用户点保存后，真正执行 INSERT SQL 的代码更接近哪里？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只在 AddTransaction.tsx 里，因为它有表单</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>在 Home.tsx 的 insertTransaction 里，通过 db.runAsync</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>在 App.tsx 的 Stack.Navigator 配置里</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="对。秒和毫秒差 1000 倍，和数据库里其它日期比较时必须同一单位。"
+               data-explanation-wrong="回忆一下：SQLite 里 strftime 和 Home 里按月汇总用的都是哪种时间单位？">
+            <h3 class="quiz-question">为什么 <code>date: new Date().getTime() / 1000</code> 要除以 1000？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>让数字变小，节省手机电量</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>因为金额最多两位小数</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>JavaScript 默认毫秒，项目里用「Unix 秒」存日期</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m1')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m1')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-2" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h1 class="module-title">谁在做这件事</h1>
+      <p class="module-subtitle">把文件想成乐队分工：<span class="term" data-definition="App.tsx 通常是 React 应用的根组件文件，负责挂载导航和全局提供者（Provider）。">App.tsx</span> 是指挥，<span class="term" data-definition="组件（Component）是 UI 的一块积木，可组合、可复用。">组件</span>各管一段旋律。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">仓库里和界面最相关的文件</h2>
+        <div class="file-tree">
+          <div class="ft-folder open">
+            <span class="ft-name">Expense-Tracker/</span>
+            <span class="ft-desc">项目根</span>
+            <div class="ft-children">
+              <div class="ft-file">
+                <span class="ft-name">App.tsx</span>
+                <span class="ft-desc">SQLiteProvider + 导航栈：Home 与 Payment 两个屏</span>
+              </div>
+              <div class="ft-folder open">
+                <span class="ft-name">screens/</span>
+                <span class="ft-desc">整屏视图</span>
+                <div class="ft-children">
+                  <div class="ft-file">
+                    <span class="ft-name">Home.tsx</span>
+                    <span class="ft-desc">读库、汇总、列表、把 insertTransaction 传给表单</span>
+                  </div>
+                  <div class="ft-file">
+                    <span class="ft-name">sheets/Payment.tsx</span>
+                    <span class="ft-desc">演示用半屏付费 UI（与记账主流程弱相关）</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ft-folder open">
+                <span class="ft-name">components/</span>
+                <span class="ft-desc">可复用块</span>
+                <div class="ft-children">
+                  <div class="ft-file">
+                    <span class="ft-name">AddTransaction.tsx</span>
+                    <span class="ft-desc">「记一笔」表单与分类查询</span>
+                  </div>
+                  <div class="ft-file">
+                    <span class="ft-name">TransactionsList.tsx</span>
+                    <span class="ft-desc">遍历交易，长按删除</span>
+                  </div>
+                  <div class="ft-file">
+                    <span class="ft-name">SummaryChart.tsx</span>
+                    <span class="ft-desc">周柱状图 + 收入/支出切换</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ft-file">
+                <span class="ft-name">queries/ChartQuery.ts</span>
+                <span class="ft-desc">把 SQL 结果整理成图表库需要的数组</span>
+              </div>
+              <div class="ft-file">
+                <span class="ft-name">i18n.ts</span>
+                <span class="ft-desc">分类英文名 → 界面中文显示名</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">群聊：当你点「记一笔」</h2>
+        <p>点「Next Message」看他们怎么接力。这是把 <span class="term" data-definition="Props（属性）是父组件传给子组件的数据和回调函数，单向从外向内。">props</span> 和数据库上下文拟人化，方便记。</p>
+
+        <div class="chat-window" id="chat-expense-buddy">
+          <div class="chat-messages">
+            <div class="chat-message" data-msg="0" data-sender="actor-a" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">你</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">用户</span>
+                <p>我想记一笔午餐 35 元，选「外出就餐」。</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="1" data-sender="actor-b" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">A</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">AddTransaction</span>
+                <p>我这边用 SegmentedControl 切支出/收入，再 SELECT 出对应 Categories。点保存时我调用 Home 传下来的 insertTransaction。</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="2" data-sender="actor-c" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">H</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-3)">Home</span>
+                <p>收到。我在 withTransactionAsync 里先 INSERT，再跑 getData()：拉最近 10 条、全部分类、本月收支合计。</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="3" data-sender="actor-d" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">S</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-5)">SQLite</span>
+                <p>行已写入 Transactions 表。下一次 SELECT 会带上这条。</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="4" data-sender="actor-e" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-4)">📊</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-4)">SummaryChart</span>
+                <p>我等 useEffect 发现周或类型变了，就向 SQLite 要本周聚合数据，再交给 processWeeklyData 填柱子。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-typing" id="chat-typing" style="display:none">
+            <div class="chat-avatar" id="chat-expense-buddy-typing-avatar">?</div>
+            <div class="chat-typing-dots">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+          </div>
+
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">Next Message</button>
+            <button class="btn chat-all-btn">Play All</button>
+            <button class="btn chat-reset-btn">Replay</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">代码 ↔ 白话：列表怎么找到分类名？</h2>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">      {transactions.map((transaction) => {</span>
+<span class="code-line">        <span class="code-keyword">const</span> categoryForCurrentItem = categories.find(</span>
+<span class="code-line">          (category) => category.id === transaction.category_id</span>
+<span class="code-line">        );</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">对每一笔交易循环处理。</p>
+              <p class="tl">在分类数组里查找 id 和这笔交易的 category_id 相同的那一项。</p>
+              <p class="tl">比较的是数据库里存的外键数字。</p>
+              <p class="tl">找到后交给 TransactionListItem 显示emoji和中文名。</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-icon">📌</div>
+          <div class="callout-content">
+            <strong class="callout-title">和 AI 沟通时</strong>
+            <p>你可以说：「在 TransactionsList 里用 find 把 category_id 映射到 Category」——比「让列表显示分类」更精确。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">本模块自测</h2>
+        <div class="quiz-container" id="quiz-m2">
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="对。Payment 是 Stack 里单独注册的屏，演示 modal；主列表和图表都在 Home。"
+               data-explanation-wrong="对照 App.tsx 的 Stack.Screen：主流程在 Home。">
+            <h3 class="quiz-question">你想改「首页列表长按删除」的行为，优先打开哪个文件？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>components/TransactionsList.tsx（或 TransactionListItem 展示细节）</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>screens/sheets/Payment.tsx</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>queries/ChartQuery.ts</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="对。i18n 把数据库里的英文 category name 映射成界面中文；表里仍存英文。"
+               data-explanation-wrong="constants 管颜色和 emoji；显示中文标签在 i18n。">
+            <h3 class="quiz-question">分类在 SQLite 里叫 Groceries，界面显示「杂货」，主要归功于？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>constants.ts 里的 categoryColors</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>i18n.ts 里的 categoryDisplayName</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>babel.config.js</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m2')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m2')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-3" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h1 class="module-title">SQLite 与数据形状</h1>
+      <p class="module-subtitle">表里的每一行像一张<strong>收据存根</strong>：固定栏目（金额、时间、类型），<span class="term" data-definition="TypeScript 是给 JavaScript 加「类型标签」的语言，能在写代码阶段发现很多错误。">TypeScript</span> 的 <span class="term" data-definition="interface 描述一个对象应该有哪些字段、类型是什么，不写运行逻辑。">interface</span> 就是存根的模板复印件。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">App 如何把数据库文件带进整棵树？</h2>
+        <p><span class="term" data-definition="React Context 让你在组件树深处读取「上层某处提供」的值，而不用一层层传 props。">Context</span> 由 <code>SQLiteProvider</code> 创建；子组件里 <code>useSQLiteContext()</code> 能拿到同一个 <span class="term" data-definition="数据库连接（connection）是与数据库会话的一条管道，用来执行查询和写入。">db</span> 句柄。</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">          &lt;SQLiteProvider</span>
+<span class="code-line">            databaseName=&quot;mySQLiteDB.db&quot;</span>
+<span class="code-line">            useSuspense</span>
+<span class="code-line">            assetSource={{</span>
+<span class="code-line">              assetId: require(&quot;./assets/mySQLiteDB.db&quot;),</span>
+<span class="code-line">            }}</span>
+<span class="code-line">          &gt;</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">用官方封装包一层：下面所有屏幕共享这一个 SQLite。</p>
+              <p class="tl">磁盘上的文件名，第一次会从内置资源复制出来。</p>
+              <p class="tl">打开库未完成时交给 React Suspense 显示「正在加载数据库…」。</p>
+              <p class="tl">assetSource 告诉运行时：预置的 .db 文件在哪个 bundle 路径。</p>
+              <p class="tl">require 指向打包进 App 的二进制种子数据库。</p>
+              <p class="tl">对象字面量结束。</p>
+              <p class="tl">从这里开始里面的 Navigator 都能访问数据库上下文。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">TypeScript 怎么描述「一笔交易」？</h2>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export</span> <span class="code-keyword">interface</span> <span class="code-function">Transaction</span> {</span>
+<span class="code-line">  id: <span class="code-keyword">number</span>;</span>
+<span class="code-line">  category_id: <span class="code-keyword">number</span>;</span>
+<span class="code-line">  amount: <span class="code-keyword">number</span>;</span>
+<span class="code-line">  date: <span class="code-keyword">number</span>;</span>
+<span class="code-line">  description: <span class="code-keyword">string</span>;</span>
+<span class="code-line">  type: <span class="code-string">&quot;Expense&quot;</span> | <span class="code-string">&quot;Income&quot;</span>;</span>
+<span class="code-line">}</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">对外导出：别的文件可以 import 这个形状说明。</p>
+              <p class="tl">主键 id，插入前可能没有，读出来后一定有。</p>
+              <p class="tl">指向 Categories 表里哪一行分类。</p>
+              <p class="tl">金额用数字存。</p>
+              <p class="tl">日期这里用数字表示 Unix 秒。</p>
+              <p class="tl">人类可读的一句话说明。</p>
+              <p class="tl">只能是支出或收入两个字面量之一，防止写成别的字符串。</p>
+              <p class="tl">接口定义结束；与数据库表字段一一对应。</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-warning">
+          <div class="callout-icon">⚠️</div>
+          <div class="callout-content">
+            <strong class="callout-title">和表结构对齐</strong>
+            <p>INSERT 语句里的列顺序必须和这里你打算塞的字段一致；改表结构时记得同时改 <code>types.ts</code> 和 <code>INSERT</code>。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">本模块自测</h2>
+        <div class="quiz-container" id="quiz-m3">
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="对。useSuspense 与 assetSource 把预置 db 拷到可写目录；注释掉的旧方案是手动 FileSystem 下载。"
+               data-explanation-wrong="再看 App.tsx：当前启用的是哪一段 Provider？">
+            <h3 class="quiz-question">首次安装 App 时，带分类种子的数据库主要靠哪种机制出现？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>每次启动都从远程 URL 下载</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>用户必须先手动导入 CSV</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>SQLiteProvider 的 assetSource + require(./assets/mySQLiteDB.db)</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="对。占位符 ? 由驱动按顺序绑定数组里的值，能防 SQL 注入拼接。"
+               data-explanation-wrong="回忆 Home.insertTransaction：runAsync 的第二个参数是什么？">
+            <h3 class="quiz-question">为什么 INSERT 用 <code>VALUES (?, ?, ?, ?, ?)</code> 而不是把金额直接拼进字符串？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>参数化查询：安全、类型清晰、避免特殊字符破坏语句</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>因为 SQLite 不支持数字</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>问号只是装饰，没有实际作用</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m3')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m3')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-4" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h1 class="module-title">首页如何刷新列表</h1>
+      <p class="module-subtitle">把 <code>getData</code> 想成<strong>重新拍照</strong>：数据库里的摆设变了，你就再按一次快门，<span class="term" data-definition="React state（状态）是组件「记住」的数据；setState 会触发界面重画。">state</span> 里的快照更新，列表就换新的。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">插入后为什么要立刻 getData？</h2>
+        <p><span class="term" data-definition="事务（transaction）把多条 SQL 包成「要么全成功要么全失败」的一捆，避免写到一半崩溃留下脏数据。">withTransactionAsync</span> 保证 INSERT 和随后的读取在同一捆里完成。</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">  <span class="code-keyword">async</span> <span class="code-keyword">function</span> <span class="code-function">insertTransaction</span>(transaction: Transaction) {</span>
+<span class="code-line">    db.<span class="code-function">withTransactionAsync</span>(<span class="code-keyword">async</span> () => {</span>
+<span class="code-line">      <span class="code-keyword">await</span> db.<span class="code-function">runAsync</span>(</span>
+<span class="code-line">        `</span>
+<span class="code-line">        INSERT INTO Transactions (category_id, amount, date, description, type) VALUES (?, ?, ?, ?, ?);</span>
+<span class="code-line">      `,</span>
+<span class="code-line">        [</span>
+<span class="code-line">          transaction.category_id,</span>
+<span class="code-line">          transaction.amount,</span>
+<span class="code-line">          transaction.date,</span>
+<span class="code-line">          transaction.description,</span>
+<span class="code-line">          transaction.type,</span>
+<span class="code-line">        ]</span>
+<span class="code-line">      );</span>
+<span class="code-line">      <span class="code-keyword">await</span> <span class="code-function">getData</span>();</span>
+<span class="code-line">    });</span>
+<span class="code-line">  }</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">定义异步函数：接收一笔完整的 Transaction 对象。</p>
+              <p class="tl">向 SQLite 要一个事务块，里面的步骤要么一起提交要么一起回滚。</p>
+              <p class="tl">执行一条写操作 runAsync。</p>
+              <p class="tl">多行字符串开始：里面是标准 INSERT 模板。</p>
+              <p class="tl">列名与占位符一一对应，顺序和下面数组一致。</p>
+              <p class="tl">模板字符串结束，逗号后是参数数组。</p>
+              <p class="tl">数组开始：按问号顺序塞值。</p>
+              <p class="tl">分类外键。</p>
+              <p class="tl">金额。</p>
+              <p class="tl">日期时间戳（秒）。</p>
+              <p class="tl">备注文本。</p>
+              <p class="tl">收入或支出枚举。</p>
+              <p class="tl">数组结束。</p>
+              <p class="tl">runAsync 调用结束。</p>
+              <p class="tl">写完后立刻再查一遍，刷新 transactions 等 state。</p>
+              <p class="tl">事务回调结束。</p>
+              <p class="tl">insertTransaction 函数体结束。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">删除一笔时呢？</h2>
+        <div class="icon-rows">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-1)">👆</div>
+            <div>
+              <strong>长按</strong>
+              <p>TransactionsList 用 onLongPress 调 deleteTransaction(id)。</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-2)">🗑️</div>
+            <div>
+              <strong>DELETE</strong>
+              <p>Home 里 runAsync 执行 DELETE FROM … WHERE id = ?，再 getData()。</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong class="callout-title">调试提示</strong>
+            <p>若列表不更新，先确认 INSERT/DELETE 后有没有 await getData()，再看控制台里 runAsync 是否抛错。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">本模块自测</h2>
+        <div class="quiz-container" id="quiz-m4">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="对。insertTransaction 末尾 await getData()；否则 state 仍是旧快照。"
+               data-explanation-wrong="想想 React：不 setState，界面会自己变吗？">
+            <h3 class="quiz-question">用户保存新交易后，首页列表立刻出现新行，主要依赖什么？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>SQLite 会自动通知所有 Text 组件重绘</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>insertTransaction 在写入后调用 getData() 更新 state</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只要 AddTransaction 里 setAmount 成空字符串就够</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="对。清空用 DELETE FROM Transactions 无 WHERE，再 getData；这是危险操作，生产里要加确认。"
+               data-explanation-wrong="看 Home.tsx 里 deleteAllTransactions 的实现。">
+            <h3 class="quiz-question">「清空全部交易」按钮会让数据库发生什么？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>删除 Transactions 表里所有行，然后刷新数据</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只隐藏界面，数据库原封不动</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只删 Categories，不碰 Transactions</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m4')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m4')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-5" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h1 class="module-title">图表与周视图</h1>
+      <p class="module-subtitle">柱状图像<strong>一周七格电量条</strong>：<span class="term" data-definition="SQL 聚合函数 SUM 把多行金额加成一个总数。">SUM</span> 按星期几分组，<span class="term" data-definition="strftime 是 SQLite 里把日期格式化成字符串或取出星期几的函数。">strftime</span> 负责从时间戳里读出「星期几」。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">SQLite 里怎么按「星期几」加总？</h2>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">      <span class="code-keyword">const</span> query = `</span>
+<span class="code-line">      SELECT </span>
+<span class="code-line">        strftime(&#39;%w&#39;, date, &#39;unixepoch&#39;) AS day_of_week,</span>
+<span class="code-line">        SUM(amount) as total </span>
+<span class="code-line">      FROM Transactions </span>
+<span class="code-line">      WHERE date &gt;= ? AND date &lt;= ? AND type = ? </span>
+<span class="code-line">      GROUP BY day_of_week</span>
+<span class="code-line">      ORDER BY day_of_week ASC</span>
+<span class="code-line">    `;</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">在 TypeScript 里拼一段多行 SQL 字符串。</p>
+              <p class="tl">查询开始：选出两列。</p>
+              <p class="tl">把 date 列当 Unix 秒解释，格式化成星期索引 0–6（%w）。</p>
+              <p class="tl">同一天的多笔金额用 SUM 合成一个 total。</p>
+              <p class="tl">数据来源：Transactions 表。</p>
+              <p class="tl">只统计当前周起止时间戳之间、且类型为收入或支出的行。</p>
+              <p class="tl">按星期几分组，每天最多一条汇总。</p>
+              <p class="tl">从周日索引开始顺序输出，方便后面画柱子。</p>
+              <p class="tl">模板字符串结束，稍后用 getAllAsync 传三个参数绑定三个问号。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">processWeeklyData 在补什么洞？</h2>
+        <p>SQL 只返回「有交易的日子」；图表库却要固定七天长度。<code>ChartQuery.ts</code> 先把七天预填 0，再把查询结果塞回对应下标。</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">  data.forEach((item) => {</span>
+<span class="code-line">    <span class="code-comment">// Assuming item.dayOfWeek is in the range 0-6 (matching SQLite %w output)</span></span>
+<span class="code-line">    <span class="code-keyword">const</span> dayIndex = item.dayOfWeek;</span>
+<span class="code-line">    <span class="code-keyword">if</span> (dayIndex &gt;= <span class="code-number">0</span> &amp;&amp; dayIndex &lt; <span class="code-number">7</span>) {</span>
+<span class="code-line">      barData[dayIndex].value = item.total;</span>
+<span class="code-line">      <span class="code-keyword">if</span> (item.total &lt; <span class="code-number">100</span>) {</span>
+<span class="code-line">        barData[dayIndex].frontColor = <span class="code-string">&quot;#d1d5db&quot;</span>; <span class="code-comment">// gray for zero values</span></span>
+<span class="code-line">        barData[dayIndex].gradientColor = <span class="code-string">&quot;#d1d5db&quot;</span>; <span class="code-comment">// gray for zero values</span></span>
+<span class="code-line">      } <span class="code-keyword">else</span> {</span>
+<span class="code-line">        barData[dayIndex].frontColor = isIncome ? <span class="code-string">&quot;#d3ff00&quot;</span> : <span class="code-string">&quot;#ffab00&quot;</span>; <span class="code-comment">// default income/expense colors</span></span>
+<span class="code-line">        barData[dayIndex].gradientColor = isIncome ? <span class="code-string">&quot;#12ff00&quot;</span> : <span class="code-string">&quot;#ff0000&quot;</span>; <span class="code-comment">// default income/expense gradients</span></span>
+<span class="code-line">      }</span>
+<span class="code-line">    } <span class="code-keyword">else</span> {</span>
+<span class="code-line">      console.error(`星期索引无效: ${item.dayOfWeek}`);</span>
+<span class="code-line">    }</span>
+<span class="code-line">  });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">遍历 SQL 聚合后的每一天结果。</p>
+              <p class="tl">注释提醒：dayOfWeek 应对齐 SQLite 的 0–6。</p>
+              <p class="tl">取出当前项的星期下标。</p>
+              <p class="tl">若下标合法，进入更新逻辑。</p>
+              <p class="tl">把这一天的合计写进 barData 对应柱子的 value。</p>
+              <p class="tl">若总额低于 100，视为「视觉上的零花」，用灰色柱子。</p>
+              <p class="tl">灰色渐变，和前景一致。</p>
+              <p class="tl">否则用亮绿系表示收入、橙红系表示支出。</p>
+              <p class="tl">渐变第二色，让 gifted-charts 的 showGradient 有渐变可画。</p>
+              <p class="tl">if 分支结束。</p>
+              <p class="tl">内层 else：金额达到阈值，改用高对比收入/支出配色。</p>
+              <p class="tl">内层 if/else 整块结束。</p>
+              <p class="tl">下标异常时打错误日志，避免默默画错柱。</p>
+              <p class="tl">else 结束。</p>
+              <p class="tl">forEach 回调结束：七天数组现在填满。</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-icon">🎯</div>
+          <div class="callout-content">
+            <strong class="callout-title">和 AI 沟通时</strong>
+            <p>你可以说：「周切换时重跑 fetchWeeklyData，把结果喂给 processWeeklyData，再 setBarData。」——把数据管道说清楚。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">本模块自测</h2>
+        <div class="quiz-container" id="quiz-m5">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="对。%w 从 Unix 秒解析星期；WHERE 限制周范围与收入/支出类型。"
+               data-explanation-wrong="回忆 fetchWeeklyData 里的 query 字符串。">
+            <h3 class="quiz-question">用户切换「收入 / 支出」分段器后柱状图变了，主要是因为 SQL 哪一部分？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>ORDER BY 把行排序成倒序</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>WHERE 子句里的 type = ? 绑定不同枚举值</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>LIMIT 10 截断结果</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="对。handlePreviousWeek / handleNextWeek 改 currentDate，useEffect 依赖包含它，会重新拉数。"
+               data-explanation-wrong="看 SummaryChart 的 useEffect 依赖数组。">
+            <h3 class="quiz-question">用户点「上一周」后图表应显示新一周的数据，触发重新查询的关键是？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>setCurrentDate 改变 state，useEffect 依赖 chartPeriod / currentDate / transactionType 从而重跑 fetchWeeklyData</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>BarChart 的 key 属性自动连接网络下载新数据</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只有手动重启 App 才会变</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m5')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m5')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+  </main>
+
+</body>
+</html>

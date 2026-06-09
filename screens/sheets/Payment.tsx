@@ -42,7 +42,7 @@ export default function Payment() {
           }}
         >
           <Pressable onPress={() => navigation.goBack()}>
-            <Text style={{ color: "#007AFF", fontSize: 17 }}>Cancel</Text>
+            <Text style={{ color: "#007AFF", fontSize: 17 }}>取消</Text>
           </Pressable>
         </View>
         <View style={{ gap: 10, paddingTop: 16 }}>
@@ -54,7 +54,7 @@ export default function Payment() {
               color: "gray",
             }}
           >
-            Lifetime savings
+            累计结余
           </Text>
           <Text
             style={{
@@ -64,11 +64,10 @@ export default function Payment() {
               marginTop: 16,
             }}
           >
-            $123,823.50
+            ¥123,823.50
           </Text>
           <Text style={{ textAlign: "center" }}>
-            Saving money is the first step on financial freedom, learn more
-            about how to invest your money at
+            存钱是实现财务自由的第一步，想了解更多理财方式，请访问
             <Text style={{ color: "#007AFF" }}> codewithbeto.dev</Text>
           </Text>
 
@@ -89,18 +88,18 @@ export default function Payment() {
                 textAlign: "center",
               }}
             >
-              Get premium +
+              开通高级版 +
             </Text>
           </TouchableOpacity>
 
           <Pressable onPress={() => navigation.goBack()}>
             <Text style={{ color: "gray", fontSize: 17, textAlign: "center" }}>
-              Maybe later
+              稍后再说
             </Text>
           </Pressable>
 
           <Text style={{ textAlign: "center", fontSize: 12, color: "gray" }}>
-            Learn more about terms and conditions
+            查看服务条款与隐私说明
           </Text>
         </View>
       </BlurView>

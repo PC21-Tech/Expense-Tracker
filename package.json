@@ -3,13 +3,15 @@
   "version": "1.0.0",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start -p 8889 --lan",
+    "start:tunnel": "expo start -p 8889 --tunnel",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web -p 8889"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
+    "@expo/vector-icons": "^14.1.0",
     "@react-native-segmented-control/segmented-control": "^2.5.0",
     "@react-navigation/native": "^7.1.6",
     "@react-navigation/native-stack": "^7.3.10",
@@ -17,9 +19,11 @@
     "expo-asset": "~11.1.7",
     "expo-blur": "~14.1.5",
     "expo-dev-client": "~5.2.4",
+    "expo-document-picker": "~13.1.6",
     "expo-file-system": "~18.1.11",
     "expo-linear-gradient": "~14.1.5",
     "expo-sqlite": "~15.2.14",
+    "expo-sharing": "~13.1.5",
     "expo-status-bar": "~2.2.3",
     "expo-symbols": "~0.4.5",
     "expo-system-ui": "~5.0.10",
@@ -32,10 +36,12 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
-    "react-native-web": "~0.20.0"
+    "react-native-web": "~0.20.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@expo/ngrok": "^4.1.0",
     "@types/react": "~19.0.10",
     "typescript": "^5.1.3"
   },

@@ -1,6 +1,6 @@
 import SegmentedControl from "@react-native-segmented-control/segmented-control";
 import * as React from "react";
-import { Text, TouchableOpacity, View, Platform } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { BarChart, barDataItem } from "react-native-gifted-charts";
 import { useSQLiteContext } from "expo-sqlite";
 import { processWeeklyData } from "../queries/ChartQuery";
@@ -91,7 +91,7 @@ export default function SummaryChart() {
       console.log(formattedResult);
       return formattedResult;
     } catch (e) {
-      console.error("Error fetching weekly data:", e);
+      console.error("获取周统计数据失败:", e);
       return [];
     }
   };
@@ -99,7 +99,7 @@ export default function SummaryChart() {
   return (
     <View>
       {/* <SegmentedControl
-        values={["Week", "Month", "Year"]}
+        values={["周", "月", "年"]}
         style={{ marginBottom: 16 }}
         selectedIndex={currentTab}
         onChange={(event) => {
@@ -114,17 +114,17 @@ export default function SummaryChart() {
         }}
       /> */}
       <Text style={{ fontWeight: "700", fontSize: 18, marginBottom: 8 }}>
-        {currentEndDate.toLocaleDateString("en-US", { month: "short" })}{" "}
-        {currentEndDate.getDate()} -{" "}
-        {currentDate.toLocaleDateString("en-US", { month: "short" })}{" "}
-        {currentDate.getDate()}
+        {currentEndDate.toLocaleDateString("zh-CN", { month: "short" })}{" "}
+        {currentEndDate.getDate()} 日 —{" "}
+        {currentDate.toLocaleDateString("zh-CN", { month: "short" })}{" "}
+        {currentDate.getDate()} 日
       </Text>
       <Text style={{ color: "gray" }}>
-        Total {transactionType === "Expense" ? "Spending" : "Income"}{" "}
+        {transactionType === "Expense" ? "本周支出合计" : "本周收入合计"}{" "}
       </Text>
 
       <Text style={{ fontWeight: "700", fontSize: 32, marginBottom: 16 }}>
-        ${barData.reduce((total, item) => total + item.value, 0).toFixed(2)}
+        ¥{barData.reduce((total, item) => total + (item.value ?? 0), 0).toFixed(2)}
       </Text>
       <BarChart
         key={chartKey}
@@ -175,10 +175,10 @@ export default function SummaryChart() {
             type="hierarchical"
             tintColor={"gray"}
           />
-          <Text style={{ fontSize: 11, color: "gray" }}>Prev week</Text>
+          <Text style={{ fontSize: 11, color: "gray" }}>上一周</Text>
         </TouchableOpacity>
         <SegmentedControl
-          values={["Income", "Expense"]}
+          values={["收入", "支出"]}
           style={{ width: 200 }}
           selectedIndex={transactionType === "Income" ? 0 : 1}
           onChange={(event) => {
@@ -200,7 +200,7 @@ export default function SummaryChart() {
             type="hierarchical"
             tintColor={"gray"}
           />
-          <Text style={{ fontSize: 11, color: "gray" }}>Next week</Text>
+          <Text style={{ fontSize: 11, color: "gray" }}>下一周</Text>
         </TouchableOpacity>
       </View>
     </View>

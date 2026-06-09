@@ -14,6 +14,7 @@ export const categoryColors: { [key: string]: string } = {
   Bonus: "#6B8E23", // OliveDrab
   "Consulting Work": "#4682B4", // SteelBlue
   "Part-Time Job": "#DAA520", // GoldenRod
+  "Part-time Job": "#DAA520",
   "Online Sales": "#20B2AA", // LightSeaGreen
   "Freelance Writing": "#778899", // LightSlateGray
   "End of Year Bonus": "#5F9EA0", // CadetBlue
@@ -37,6 +38,7 @@ export const categoryEmojies: { [key: string]: string } = {
   Bonus: "🎊",
   "Consulting Work": "💼",
   "Part-Time Job": "⌚",
+  "Part-time Job": "⌚",
   "Online Sales": "🛒",
   "Freelance Writing": "✍️",
   "End of Year Bonus": "🍾",

@@ -3,16 +3,28 @@ import { StyleSheet, Text, View } from "react-native";
 import { Category, Transaction } from "../types";
 import { AutoSizeText, ResizeTextMode } from "react-native-auto-size-text";
 import { categoryColors, categoryEmojies } from "../constants";
+import { categoryDisplayName } from "../i18n";
 import Card from "./ui/Card";
+
+/** 库内一般为 Unix 秒；若误存为毫秒（数值通常 ≥ 1e12），不可再乘 1000，否则年份会异常 */
+function formatTransactionDate(epoch: number): string {
+  if (!Number.isFinite(epoch)) return "—";
+  const ms = epoch >= 1_000_000_000_000 ? epoch : epoch * 1000;
+  return new Date(ms).toLocaleString("zh-CN");
+}
 
 interface TransactionListItemProps {
   transaction: Transaction;
   categoryInfo: Category | undefined;
+  selectionMode?: boolean;
+  selected?: boolean;
 }
 
 export default function TransactionListItem({
   transaction,
   categoryInfo,
+  selectionMode = false,
+  selected = false,
 }: TransactionListItemProps) {
   const iconName =
     transaction.type === "Expense" ? "minuscircle" : "pluscircle";
@@ -22,6 +34,17 @@ export default function TransactionListItem({
   return (
     <Card>
       <View style={styles.row}>
+        {selectionMode && (
+          <View
+            style={[
+              styles.checkbox,
+              selected && styles.checkboxSelected,
+            ]}
+          >
+            {selected ? <Text style={styles.checkmark}>✓</Text> : null}
+          </View>
+        )}
+        <View style={{ flex: 1, flexDirection: "row" }}>
         <View style={{ width: "40%", gap: 3 }}>
           <Amount
             amount={transaction.amount}
@@ -39,6 +62,7 @@ export default function TransactionListItem({
           description={transaction.description}
           id={transaction.id}
         />
+        </View>
       </View>
     </Card>
   );
@@ -56,9 +80,9 @@ function TransactionInfo({
   return (
     <View style={{ flexGrow: 1, gap: 6, flexShrink: 1 }}>
       <Text style={{ fontSize: 16, fontWeight: "bold" }}>{description}</Text>
-      <Text>Transaction number {id}</Text>
+      <Text>交易编号 {id}</Text>
       <Text style={{ fontSize: 12, color: "gray" }}>
-        {new Date(date * 1000).toLocaleString()}
+        {formatTransactionDate(date)}
       </Text>
     </View>
   );
@@ -81,7 +105,7 @@ function CategoryItem({
       ]}
     >
       <Text style={styles.categoryText}>
-        {emoji} {categoryInfo?.name}
+        {emoji} {categoryDisplayName(categoryInfo?.name)}
       </Text>
     </View>
   );
@@ -105,7 +129,7 @@ function Amount({
         numberOfLines={1}
         style={[styles.amount, { maxWidth: "80%" }]}
       >
-        ${amount}
+        ¥{amount}
       </AutoSizeText>
     </View>
   );
@@ -129,5 +153,23 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 12,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: "#007AFF",
+    marginRight: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxSelected: {
+    backgroundColor: "#007AFF",
+  },
+  checkmark: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "800",
   },
 });

@@ -1,10 +1,22 @@
 import * as React from "react";
-import { Button, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Button,
+  Pressable,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import Card from "./ui/Card";
 import SegmentedControl from "@react-native-segmented-control/segmented-control";
 import { useSQLiteContext } from "expo-sqlite";
 import { Category, Transaction } from "../types";
+import { categoryDisplayName } from "../i18n";
+import {
+  parseQuickNlExpense,
+  suggestCategoryNameFromLabel,
+} from "../services/quickExpenseParse";
 
 export default function AddTransaction({
   insertTransaction,
@@ -20,6 +32,8 @@ export default function AddTransaction({
   const [description, setDescription] = React.useState<string>("");
   const [category, setCategory] = React.useState<string>("Expense");
   const [categoryId, setCategoryId] = React.useState<number>(1);
+  const [quickNl, setQuickNl] = React.useState("");
+  const [quickNlError, setQuickNlError] = React.useState("");
   const db = useSQLiteContext();
 
   React.useEffect(() => {
@@ -37,15 +51,36 @@ export default function AddTransaction({
     setCategories(result);
   }
 
-  async function handleSave() {
-    console.log({
-      amount: Number(amount),
-      description,
-      category_id: categoryId,
-      date: new Date().getTime() / 1000,
-      type: category as "Expense" | "Income",
-    });
+  const applyQuickNl = async () => {
+    setQuickNlError("");
+    const parsed = parseQuickNlExpense(quickNl);
+    if (!parsed) {
+      setQuickNlError("未识别。试试：午饭 35 元、打车 18 块，或 35 元 午饭");
+      return;
+    }
+    setAmount(parsed.amount);
+    setDescription(parsed.label);
 
+    const guess = suggestCategoryNameFromLabel(parsed.label);
+    if (!guess) return;
+
+    const row = await db.getFirstAsync<{
+      id: number;
+      name: string;
+      type: "Expense" | "Income";
+    }>(`SELECT id, name, type FROM Categories WHERE name = ? LIMIT 1`, [
+      guess,
+    ]);
+    if (!row) return;
+
+    const tab = row.type === "Income" ? 1 : 0;
+    setCategory(row.type);
+    if (tab !== currentTab) setCurrentTab(tab);
+    setCategoryId(row.id);
+    setTypeSelected(row.name);
+  };
+
+  async function handleSave() {
     // @ts-ignore
     await insertTransaction({
       amount: Number(amount),
@@ -56,6 +91,8 @@ export default function AddTransaction({
     });
     setAmount("");
     setDescription("");
+    setQuickNl("");
+    setQuickNlError("");
     setCategory("Expense");
     setCategoryId(1);
     setCurrentTab(0);
@@ -67,8 +104,48 @@ export default function AddTransaction({
       {isAddingTransaction ? (
         <View>
           <Card>
+            <Text style={{ marginBottom: 6, fontWeight: "600", color: "#333" }}>
+              快捷输入
+            </Text>
+            <Text style={{ fontSize: 12, color: "#666", marginBottom: 6 }}>
+              例如：午饭 35 元、打车 18 块；解析后填入下方金额与备注（可选匹配分类）
+            </Text>
             <TextInput
-              placeholder="$Amount"
+              placeholder="午饭 35 元"
+              value={quickNl}
+              onChangeText={(t) => {
+                setQuickNl(t);
+                if (quickNlError) setQuickNlError("");
+              }}
+              style={{
+                borderWidth: 1,
+                borderColor: "#ccc",
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                marginBottom: 8,
+              }}
+            />
+            {quickNlError ? (
+              <Text style={{ color: "#c00", fontSize: 12, marginBottom: 8 }}>
+                {quickNlError}
+              </Text>
+            ) : null}
+            <Pressable
+              onPress={() => void applyQuickNl()}
+              style={({ pressed }) => ({
+                alignSelf: "flex-start",
+                backgroundColor: pressed ? "#0051a8" : "#007AFF",
+                paddingVertical: 8,
+                paddingHorizontal: 14,
+                borderRadius: 8,
+                marginBottom: 16,
+              })}
+            >
+              <Text style={{ color: "#fff", fontWeight: "600" }}>解析并填入</Text>
+            </Pressable>
+            <TextInput
+              placeholder="金额（元）"
               style={{ fontSize: 32, marginBottom: 15, fontWeight: "bold" }}
               keyboardType="numeric"
               onChangeText={(text) => {
@@ -78,13 +155,13 @@ export default function AddTransaction({
               }}
             />
             <TextInput
-              placeholder="Description"
+              placeholder="备注说明"
               style={{ marginBottom: 15 }}
               onChangeText={setDescription}
             />
-            <Text style={{ marginBottom: 6 }}>Select a entry type</Text>
+            <Text style={{ marginBottom: 6 }}>选择类型</Text>
             <SegmentedControl
-              values={["Expense", "Income"]}
+              values={["支出", "收入"]}
               style={{ marginBottom: 15 }}
               selectedIndex={currentTab}
               onChange={(event) => {
@@ -96,7 +173,8 @@ export default function AddTransaction({
                 key={cat.name}
                 // @ts-ignore
                 id={cat.id}
-                title={cat.name}
+                categoryName={cat.name}
+                displayName={categoryDisplayName(cat.name)}
                 isSelected={typeSelected === cat.name}
                 setTypeSelected={setTypeSelected}
                 setCategoryId={setCategoryId}
@@ -107,11 +185,15 @@ export default function AddTransaction({
             style={{ flexDirection: "row", justifyContent: "space-around" }}
           >
             <Button
-              title="Cancel"
+              title="取消"
               color="red"
-              onPress={() => setIsAddingTransaction(false)}
+              onPress={() => {
+                setQuickNl("");
+                setQuickNlError("");
+                setIsAddingTransaction(false);
+              }}
             />
-            <Button title="Save" onPress={handleSave} />
+            <Button title="保存" onPress={handleSave} />
           </View>
         </View>
       ) : (
@@ -123,13 +205,15 @@ export default function AddTransaction({
 
 function CategoryButton({
   id,
-  title,
+  categoryName,
+  displayName,
   isSelected,
   setTypeSelected,
   setCategoryId,
 }: {
   id: number;
-  title: string;
+  categoryName: string;
+  displayName: string;
   isSelected: boolean;
   setTypeSelected: React.Dispatch<React.SetStateAction<string>>;
   setCategoryId: React.Dispatch<React.SetStateAction<number>>;
@@ -137,7 +221,7 @@ function CategoryButton({
   return (
     <TouchableOpacity
       onPress={() => {
-        setTypeSelected(title);
+        setTypeSelected(categoryName);
         setCategoryId(id);
       }}
       activeOpacity={0.6}
@@ -158,7 +242,7 @@ function CategoryButton({
           marginLeft: 5,
         }}
       >
-        {title}
+        {displayName}
       </Text>
     </TouchableOpacity>
   );
@@ -185,7 +269,7 @@ function AddButton({
     >
       <MaterialIcons name="add-circle-outline" size={24} color="#007BFF" />
       <Text style={{ fontWeight: "700", color: "#007BFF", marginLeft: 5 }}>
-        New Entry
+        记一笔
       </Text>
     </TouchableOpacity>
   );

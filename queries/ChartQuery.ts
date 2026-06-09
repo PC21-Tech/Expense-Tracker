@@ -2,7 +2,7 @@ export const processWeeklyData = (
   data: { dayOfWeek: number; total: number }[],
   transactionsType: "Income" | "Expense" = "Income"
 ) => {
-  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const days = ["日", "一", "二", "三", "四", "五", "六"];
   const isIncome = transactionsType === "Income";
 
   let barData = days.map(
@@ -28,7 +28,7 @@ export const processWeeklyData = (
         barData[dayIndex].gradientColor = isIncome ? "#12ff00" : "#ff0000"; // default income/expense gradients
       }
     } else {
-      console.error(`Invalid day of week index: ${item.dayOfWeek}`);
+      console.error(`星期索引无效: ${item.dayOfWeek}`);
     }
   });
 

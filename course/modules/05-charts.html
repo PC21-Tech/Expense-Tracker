@@ -1,0 +1,146 @@
+<section class="module" id="module-5" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h1 class="module-title">图表与周视图</h1>
+      <p class="module-subtitle">柱状图像<strong>一周七格电量条</strong>：<span class="term" data-definition="SQL 聚合函数 SUM 把多行金额加成一个总数。">SUM</span> 按星期几分组，<span class="term" data-definition="strftime 是 SQLite 里把日期格式化成字符串或取出星期几的函数。">strftime</span> 负责从时间戳里读出「星期几」。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">SQLite 里怎么按「星期几」加总？</h2>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">      <span class="code-keyword">const</span> query = `</span>
+<span class="code-line">      SELECT </span>
+<span class="code-line">        strftime(&#39;%w&#39;, date, &#39;unixepoch&#39;) AS day_of_week,</span>
+<span class="code-line">        SUM(amount) as total </span>
+<span class="code-line">      FROM Transactions </span>
+<span class="code-line">      WHERE date &gt;= ? AND date &lt;= ? AND type = ? </span>
+<span class="code-line">      GROUP BY day_of_week</span>
+<span class="code-line">      ORDER BY day_of_week ASC</span>
+<span class="code-line">    `;</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">在 TypeScript 里拼一段多行 SQL 字符串。</p>
+              <p class="tl">查询开始：选出两列。</p>
+              <p class="tl">把 date 列当 Unix 秒解释，格式化成星期索引 0–6（%w）。</p>
+              <p class="tl">同一天的多笔金额用 SUM 合成一个 total。</p>
+              <p class="tl">数据来源：Transactions 表。</p>
+              <p class="tl">只统计当前周起止时间戳之间、且类型为收入或支出的行。</p>
+              <p class="tl">按星期几分组，每天最多一条汇总。</p>
+              <p class="tl">从周日索引开始顺序输出，方便后面画柱子。</p>
+              <p class="tl">模板字符串结束，稍后用 getAllAsync 传三个参数绑定三个问号。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">processWeeklyData 在补什么洞？</h2>
+        <p>SQL 只返回「有交易的日子」；图表库却要固定七天长度。<code>ChartQuery.ts</code> 先把七天预填 0，再把查询结果塞回对应下标。</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">  data.forEach((item) => {</span>
+<span class="code-line">    <span class="code-comment">// Assuming item.dayOfWeek is in the range 0-6 (matching SQLite %w output)</span></span>
+<span class="code-line">    <span class="code-keyword">const</span> dayIndex = item.dayOfWeek;</span>
+<span class="code-line">    <span class="code-keyword">if</span> (dayIndex &gt;= <span class="code-number">0</span> &amp;&amp; dayIndex &lt; <span class="code-number">7</span>) {</span>
+<span class="code-line">      barData[dayIndex].value = item.total;</span>
+<span class="code-line">      <span class="code-keyword">if</span> (item.total &lt; <span class="code-number">100</span>) {</span>
+<span class="code-line">        barData[dayIndex].frontColor = <span class="code-string">&quot;#d1d5db&quot;</span>; <span class="code-comment">// gray for zero values</span></span>
+<span class="code-line">        barData[dayIndex].gradientColor = <span class="code-string">&quot;#d1d5db&quot;</span>; <span class="code-comment">// gray for zero values</span></span>
+<span class="code-line">      } <span class="code-keyword">else</span> {</span>
+<span class="code-line">        barData[dayIndex].frontColor = isIncome ? <span class="code-string">&quot;#d3ff00&quot;</span> : <span class="code-string">&quot;#ffab00&quot;</span>; <span class="code-comment">// default income/expense colors</span></span>
+<span class="code-line">        barData[dayIndex].gradientColor = isIncome ? <span class="code-string">&quot;#12ff00&quot;</span> : <span class="code-string">&quot;#ff0000&quot;</span>; <span class="code-comment">// default income/expense gradients</span></span>
+<span class="code-line">      }</span>
+<span class="code-line">    } <span class="code-keyword">else</span> {</span>
+<span class="code-line">      console.error(`星期索引无效: ${item.dayOfWeek}`);</span>
+<span class="code-line">    }</span>
+<span class="code-line">  });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">遍历 SQL 聚合后的每一天结果。</p>
+              <p class="tl">注释提醒：dayOfWeek 应对齐 SQLite 的 0–6。</p>
+              <p class="tl">取出当前项的星期下标。</p>
+              <p class="tl">若下标合法，进入更新逻辑。</p>
+              <p class="tl">把这一天的合计写进 barData 对应柱子的 value。</p>
+              <p class="tl">若总额低于 100，视为「视觉上的零花」，用灰色柱子。</p>
+              <p class="tl">灰色渐变，和前景一致。</p>
+              <p class="tl">否则用亮绿系表示收入、橙红系表示支出。</p>
+              <p class="tl">渐变第二色，让 gifted-charts 的 showGradient 有渐变可画。</p>
+              <p class="tl">if 分支结束。</p>
+              <p class="tl">内层 else：金额达到阈值，改用高对比收入/支出配色。</p>
+              <p class="tl">内层 if/else 整块结束。</p>
+              <p class="tl">下标异常时打错误日志，避免默默画错柱。</p>
+              <p class="tl">else 结束。</p>
+              <p class="tl">forEach 回调结束：七天数组现在填满。</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-icon">🎯</div>
+          <div class="callout-content">
+            <strong class="callout-title">和 AI 沟通时</strong>
+            <p>你可以说：「周切换时重跑 fetchWeeklyData，把结果喂给 processWeeklyData，再 setBarData。」——把数据管道说清楚。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">本模块自测</h2>
+        <div class="quiz-container" id="quiz-m5">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="对。%w 从 Unix 秒解析星期；WHERE 限制周范围与收入/支出类型。"
+               data-explanation-wrong="回忆 fetchWeeklyData 里的 query 字符串。">
+            <h3 class="quiz-question">用户切换「收入 / 支出」分段器后柱状图变了，主要是因为 SQL 哪一部分？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>ORDER BY 把行排序成倒序</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>WHERE 子句里的 type = ? 绑定不同枚举值</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>LIMIT 10 截断结果</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="对。handlePreviousWeek / handleNextWeek 改 currentDate，useEffect 依赖包含它，会重新拉数。"
+               data-explanation-wrong="看 SummaryChart 的 useEffect 依赖数组。">
+            <h3 class="quiz-question">用户点「上一周」后图表应显示新一周的数据，触发重新查询的关键是？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>setCurrentDate 改变 state，useEffect 依赖 chartPeriod / currentDate / transactionType 从而重跑 fetchWeeklyData</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>BarChart 的 key 属性自动连接网络下载新数据</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只有手动重启 App 才会变</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m5')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m5')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

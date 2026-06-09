@@ -1,0 +1,157 @@
+<section class="module" id="module-1" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">从「记一笔」说起</h1>
+      <p class="module-subtitle">你点保存之后，钱和文字去了哪里？把它想成快递：表单是打包台，函数是快递员，<span class="term" data-definition="SQLite 是一种轻量级关系型数据库，整个库常常就是一个文件，适合装在手机 App 里离线使用。">SQLite</span> 是小区里的智能快递柜。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">这个 App 在做什么？</h2>
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1)">✏️</div>
+            <h4 class="pattern-title">记收支</h4>
+            <p class="pattern-desc">选支出或收入、分类、金额和备注，保存在本机。</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2)">📊</div>
+            <h4 class="pattern-title">看图表</h4>
+            <p class="pattern-desc">按周汇总柱状图，切换收入/支出。</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5)">
+            <div class="pattern-icon" style="background: var(--color-actor-5)">🔒</div>
+            <h4 class="pattern-title">本地优先</h4>
+            <p class="pattern-desc">数据在 <span class="term" data-definition="Expo 是一套用 JavaScript/TypeScript 写原生移动应用和 Web 的工具链，本项目用它跑 React Native。">Expo</span> 自带的 SQLite 文件里，默认不上传云端。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">跟一趟：从手指到数据库</h2>
+        <p>下面每一步点「Next Step」，看「包裹」在谁之间传递。对应真实代码里的 <code>handleSave</code> → <code>insertTransaction</code> → <span class="term" data-definition="SQL 是用来读写关系型数据库的语言，这里用 INSERT 写入一行交易记录。">SQL</span> <code>INSERT</code>。</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"flow-actor-1","label":"你在 AddTransaction 里填好金额、备注、分类，点「保存」"},
+          {"highlight":"flow-actor-2","label":"AddTransaction 组装对象并 await 父组件传来的 insertTransaction"},
+          {"highlight":"flow-actor-3","label":"Home 里用 db.runAsync 执行 INSERT 与占位符参数","packet":true,"from":"actor-2","to":"actor-3"},
+          {"highlight":"flow-actor-4","label":"SQLite 把一行写进 mySQLiteDB.db 文件","packet":true,"from":"actor-3","to":"actor-4"},
+          {"highlight":"flow-actor-3","label":"同一事务里再调用 getData()，重新 SELECT，列表与汇总更新","packet":true,"from":"actor-4","to":"actor-3"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1">
+              <div class="flow-actor-icon">👆</div>
+              <span>你</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-2">
+              <div class="flow-actor-icon">➕</div>
+              <span>AddTransaction</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-3">
+              <div class="flow-actor-icon">🏠</div>
+              <span>Home</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-4">
+              <div class="flow-actor-icon">🗄️</div>
+              <span>SQLite</span>
+            </div>
+          </div>
+          <div class="flow-packet" id="flow-packet"></div>
+          <div class="flow-step-label" id="flow-label">Click &quot;Next Step&quot; to begin</div>
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">Next Step</button>
+            <button class="btn flow-reset-btn">Restart</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">代码 ↔ 白话：<code>handleSave</code> 在打包什么？</h2>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">    <span class="code-comment">// @ts-ignore</span></span>
+<span class="code-line">    <span class="code-keyword">await</span> <span class="code-function">insertTransaction</span>({</span>
+<span class="code-line">      <span class="code-property">amount</span>: <span class="code-function">Number</span>(amount),</span>
+<span class="code-line">      description,</span>
+<span class="code-line">      category_id: categoryId,</span>
+<span class="code-line">      date: <span class="code-keyword">new</span> <span class="code-function">Date</span>().getTime() / <span class="code-number">1000</span>,</span>
+<span class="code-line">      type: category <span class="code-keyword">as</span> <span class="code-string">&quot;Expense&quot;</span> | <span class="code-string">&quot;Income&quot;</span>,</span>
+<span class="code-line">    });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">告诉 TypeScript 检查器「这一行先别较真」，原型里类型偶尔会对不齐。</p>
+              <p class="tl">调用父组件传入的 insertTransaction，把下面这个对象交给 Home 去写库。</p>
+              <p class="tl">把金额输入框里的字符串转成数字。</p>
+              <p class="tl">备注原样传上去；category_id 用当前选中的分类主键。</p>
+              <p class="tl">当前时刻转成 Unix 时间戳的「秒」版本（毫秒除以 1000）。</p>
+              <p class="tl">标记这是支出还是收入，类型写成字面量联合，减少拼写错误。</p>
+              <p class="tl">对象结束，这一整条 await 语句写完。</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong class="callout-title">小洞察</strong>
+            <p>子组件不直接碰数据库，只调用父组件传来的函数。这样改存储方式时，通常只动 Home 一层——这叫「把变化关在一扇门后」。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">本模块自测</h2>
+        <div class="quiz-container" id="quiz-m1">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="对。insertTransaction 在 Home 里用 useSQLiteContext 拿到的 db 执行写入；AddTransaction 只负责表单状态。"
+               data-explanation-wrong="再想想：谁拿着 useSQLiteContext()？谁把 insertTransaction 当 props 传下去？">
+            <h3 class="quiz-question">用户点保存后，真正执行 INSERT SQL 的代码更接近哪里？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只在 AddTransaction.tsx 里，因为它有表单</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>在 Home.tsx 的 insertTransaction 里，通过 db.runAsync</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>在 App.tsx 的 Stack.Navigator 配置里</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="对。秒和毫秒差 1000 倍，和数据库里其它日期比较时必须同一单位。"
+               data-explanation-wrong="回忆一下：SQLite 里 strftime 和 Home 里按月汇总用的都是哪种时间单位？">
+            <h3 class="quiz-question">为什么 <code>date: new Date().getTime() / 1000</code> 要除以 1000？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>让数字变小，节省手机电量</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>因为金额最多两位小数</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>JavaScript 默认毫秒，项目里用「Unix 秒」存日期</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m1')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m1')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

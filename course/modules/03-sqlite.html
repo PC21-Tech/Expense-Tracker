@@ -1,0 +1,127 @@
+<section class="module" id="module-3" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h1 class="module-title">SQLite 与数据形状</h1>
+      <p class="module-subtitle">表里的每一行像一张<strong>收据存根</strong>：固定栏目（金额、时间、类型），<span class="term" data-definition="TypeScript 是给 JavaScript 加「类型标签」的语言，能在写代码阶段发现很多错误。">TypeScript</span> 的 <span class="term" data-definition="interface 描述一个对象应该有哪些字段、类型是什么，不写运行逻辑。">interface</span> 就是存根的模板复印件。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">App 如何把数据库文件带进整棵树？</h2>
+        <p><span class="term" data-definition="React Context 让你在组件树深处读取「上层某处提供」的值，而不用一层层传 props。">Context</span> 由 <code>SQLiteProvider</code> 创建；子组件里 <code>useSQLiteContext()</code> 能拿到同一个 <span class="term" data-definition="数据库连接（connection）是与数据库会话的一条管道，用来执行查询和写入。">db</span> 句柄。</p>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">          &lt;SQLiteProvider</span>
+<span class="code-line">            databaseName=&quot;mySQLiteDB.db&quot;</span>
+<span class="code-line">            useSuspense</span>
+<span class="code-line">            assetSource={{</span>
+<span class="code-line">              assetId: require(&quot;./assets/mySQLiteDB.db&quot;),</span>
+<span class="code-line">            }}</span>
+<span class="code-line">          &gt;</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">用官方封装包一层：下面所有屏幕共享这一个 SQLite。</p>
+              <p class="tl">磁盘上的文件名，第一次会从内置资源复制出来。</p>
+              <p class="tl">打开库未完成时交给 React Suspense 显示「正在加载数据库…」。</p>
+              <p class="tl">assetSource 告诉运行时：预置的 .db 文件在哪个 bundle 路径。</p>
+              <p class="tl">require 指向打包进 App 的二进制种子数据库。</p>
+              <p class="tl">对象字面量结束。</p>
+              <p class="tl">从这里开始里面的 Navigator 都能访问数据库上下文。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">TypeScript 怎么描述「一笔交易」？</h2>
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export</span> <span class="code-keyword">interface</span> <span class="code-function">Transaction</span> {</span>
+<span class="code-line">  id: <span class="code-keyword">number</span>;</span>
+<span class="code-line">  category_id: <span class="code-keyword">number</span>;</span>
+<span class="code-line">  amount: <span class="code-keyword">number</span>;</span>
+<span class="code-line">  date: <span class="code-keyword">number</span>;</span>
+<span class="code-line">  description: <span class="code-keyword">string</span>;</span>
+<span class="code-line">  type: <span class="code-string">&quot;Expense&quot;</span> | <span class="code-string">&quot;Income&quot;</span>;</span>
+<span class="code-line">}</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">白话</span>
+            <div class="translation-lines">
+              <p class="tl">对外导出：别的文件可以 import 这个形状说明。</p>
+              <p class="tl">主键 id，插入前可能没有，读出来后一定有。</p>
+              <p class="tl">指向 Categories 表里哪一行分类。</p>
+              <p class="tl">金额用数字存。</p>
+              <p class="tl">日期这里用数字表示 Unix 秒。</p>
+              <p class="tl">人类可读的一句话说明。</p>
+              <p class="tl">只能是支出或收入两个字面量之一，防止写成别的字符串。</p>
+              <p class="tl">接口定义结束；与数据库表字段一一对应。</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout callout-warning">
+          <div class="callout-icon">⚠️</div>
+          <div class="callout-content">
+            <strong class="callout-title">和表结构对齐</strong>
+            <p>INSERT 语句里的列顺序必须和这里你打算塞的字段一致；改表结构时记得同时改 <code>types.ts</code> 和 <code>INSERT</code>。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">本模块自测</h2>
+        <div class="quiz-container" id="quiz-m3">
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="对。useSuspense 与 assetSource 把预置 db 拷到可写目录；注释掉的旧方案是手动 FileSystem 下载。"
+               data-explanation-wrong="再看 App.tsx：当前启用的是哪一段 Provider？">
+            <h3 class="quiz-question">首次安装 App 时，带分类种子的数据库主要靠哪种机制出现？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>每次启动都从远程 URL 下载</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>用户必须先手动导入 CSV</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>SQLiteProvider 的 assetSource + require(./assets/mySQLiteDB.db)</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="对。占位符 ? 由驱动按顺序绑定数组里的值，能防 SQL 注入拼接。"
+               data-explanation-wrong="回忆 Home.insertTransaction：runAsync 的第二个参数是什么？">
+            <h3 class="quiz-question">为什么 INSERT 用 <code>VALUES (?, ?, ?, ?, ?)</code> 而不是把金额直接拼进字符串？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>参数化查询：安全、类型清晰、避免特殊字符破坏语句</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>因为 SQLite 不支持数字</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>问号只是装饰，没有实际作用</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m3')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m3')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
